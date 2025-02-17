@@ -1,0 +1,16 @@
+.TH SIMPLE_SHELL 1 "February 2025" "Simple Shell"
+.SH NAME
+simple_shell \- A simple UNIX shell.
+.SH SYNOPSIS
+simple_shell
+.SH DESCRIPTION
+A basic shell that executes user commands and handles basic built-in commands.
+.SH COMMANDS
+.TP
+exit
+    Exits the shell.
+.TP
+env
+    Prints the current environment.
+.SH AUTHOR
+Ralph Fahed
