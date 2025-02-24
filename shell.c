@@ -1,60 +1,45 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 
-int main(void)
-{
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t nread;
-    pid_t pid;
-    int status;
+#define MAX_INPUT_SIZE 1024
 
-    while (1)
-    {
-        printf("#cisfun$ ");  /* Display prompt */
-        fflush(stdout);
+int main() {
+    char input[MAX_INPUT_SIZE];
+    char *args[2];
+    char *command = "/bin/ls";  /* Example: Always run ls for now */
 
-        nread = getline(&line, &len, stdin);
-        if (nread == -1)  /* Handle EOF (Ctrl+D) */
-        {
-            printf("\n");
-            break;
+    while (1) {
+        /* Print prompt only if input is from the terminal (interactive) */
+        if (isatty(fileno(stdin))) {
+            printf("#cisfun$ ");
+            fflush(stdout);
         }
 
-        line[strcspn(line, "\n")] = '\0';  /* Remove newline */
-
-        if (strlen(line) == 0)  /* Ignore empty lines */
-            continue;
-
-        pid = fork();
-        if (pid == -1)
-        {
-            perror("fork");
-            continue;
+        /* Read the input */
+        if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
+            break;  /* Exit if no input */
         }
 
-        if (pid == 0)  /* Child process */
-        {
-            char *argv[2];
-            argv[0] = line;
-            argv[1] = NULL;
+        /* Remove trailing newline */
+        input[strcspn(input, "\n")] = 0;
 
-            if (execve(line, argv, NULL) == -1)
-            {
-                perror("Error");
-                exit(EXIT_FAILURE);
-            }
-        }
-        else  /* Parent process */
-        {
-            wait(&status);
+        /* Example: Handle the command '/bin/ls' */
+        args[0] = command;
+        args[1] = NULL;
+
+        /* Execute the command */
+        if (fork() == 0) {
+            execve(command, args, NULL);
+            perror("execve failed");
+            exit(1);
+        } else {
+            wait(NULL);  /* Wait for child process */
         }
     }
-
-    free(line);  /* Free the allocated memory */
     return 0;
 }
 
