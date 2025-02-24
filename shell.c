@@ -12,41 +12,39 @@ int main(void)
     pid_t pid;
     int status;
 
-    while (1)
+while (1)
+{
+    printf("$ ");
+    fflush(stdout); /* Ensure the prompt is displayed immediately */
+
+    nread = getline(&line, &len, stdin);
+
+    if (nread == -1) /* Handle EOF (Ctrl+D) */
     {
-        printf("$ ");
-        nread = getline(&line, &len, stdin);
-
-        if (nread == -1) /* Handle EOF (Ctrl+D) */
-        {
-            printf("\n");
-            break;
-        }
-
-        line[strcspn(line, "\n")] = '\0'; /* Remove newline */
-
-        if (strlen(line) == 0) /* Ignore empty input */
-            continue;
-
-        pid = fork();
-        if (pid == -1)
-        {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
-
-        if (pid == 0)
-        {
-            execute_command(line);
-        }
-        else
-        {
-            wait(&status);
-        }
+        printf("\n");
+        break;
     }
 
-    free(line);
-    return (0);
+    line[strcspn(line, "\n")] = '\0'; /* Remove newline */
+
+    if (strlen(line) == 0) /* Ignore empty input */
+        continue;
+
+    pid = fork();
+    if (pid == -1)
+    {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0)
+    {
+        execute_command(line);
+    }
+    else
+    {
+        wait(&status);
+    }
 }
 
 /**
