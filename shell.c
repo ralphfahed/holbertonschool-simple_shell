@@ -52,10 +52,10 @@ void execute_command(char *command) {
 
 int main() {
     char *command;
-    size_t len;  /* Declare len at the top */
+    size_t len;
 
     while (1) {
-        display_prompt();  /* Display prompt */
+        display_prompt();  /* Display prompt before reading the command */
         command = read_input();  /* Read input from the user */
 
         if (command == NULL) {  /* Handle EOF (Ctrl+D) */
@@ -63,15 +63,14 @@ int main() {
             break;
         }
 
-        /* Remove newline character if present */
-        len = strlen(command);  /* Now it's declared at the top */
+        len = strlen(command);
         if (len > 0 && command[len - 1] == '\n') {
-            command[len - 1] = '\0';
+            command[len - 1] = '\0';  /* Remove the newline character */
         }
 
         /* If the command is not empty, attempt to execute it */
         if (strlen(command) > 0) {
-            execute_command(command);
+            execute_command(command);  /* Execute the command without printing prompt again */
         }
 
         free(command);  /* Free the allocated memory for the command */
