@@ -14,8 +14,12 @@ int main(void)
 
     while (1)
     {
-        printf("#cisfun$ ");  /* Display prompt only once before reading input */
-        fflush(stdout);
+        /* Print the prompt before reading input */
+        if (isatty(STDIN_FILENO))
+        {
+            printf("#cisfun$ ");
+            fflush(stdout);
+        }
 
         nread = getline(&line, &len, stdin);
         if (nread == -1)  /* Handle EOF (Ctrl+D) */
@@ -24,7 +28,7 @@ int main(void)
             break;
         }
 
-        line[strcspn(line, "\n")] = '\0';  /* Remove newline character from input */
+        line[strcspn(line, "\n")] = '\0';  /* Remove newline */
 
         if (strlen(line) == 0)  /* Ignore empty lines */
             continue;
@@ -45,16 +49,16 @@ int main(void)
             if (execve(line, argv, NULL) == -1)
             {
                 perror("Error");
-                exit(EXIT_FAILURE);  /* Exit child process on error */
+                exit(EXIT_FAILURE);
             }
         }
         else  /* Parent process */
         {
-            wait(&status);  /* Parent waits for the child to finish */
+            wait(&status);  /* Parent waits for child */
         }
     }
 
-    free(line);  /* Free memory allocated for line */
+    free(line);  /* Free allocated memory for line */
     return 0;
 }
 
