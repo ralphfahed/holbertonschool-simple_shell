@@ -5,10 +5,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
-
 int main(int argc, char **argv)
 {
-    (void)argc, (void)argv;
 
     char *buf = NULL;
     size_t count = 0;
@@ -16,7 +14,7 @@ int main(int argc, char **argv)
     pid_t child_pid;
     int status;
     char *array[2];  /* Array for command and argument */
-
+ (void)argc, (void)argv;
     while (1)
     {
         write(STDOUT_FILENO, "MyShell$ ", 9);
