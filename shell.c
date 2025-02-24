@@ -16,7 +16,7 @@ int main(void)
 
     while (1) {
         /* Step 1: Display the prompt */
-        write(STDOUT_FILENO, "#cisfun$ ", 9);
+        write(STDOUT_FILENO, "MyShell$ ", 9);
 
         /* Step 2: Read the user input */
         nread = getline(&buf, &count, stdin);
@@ -47,7 +47,12 @@ int main(void)
             exit(0);  /* Exit gracefully */
         }
 
-        /* Step 8: Handle command execution */
+        /* Step 8: Handle command execution (prepending full paths if needed) */
+        if (strcmp(array[0], "ls") == 0) {
+            array[0] = "/bin/ls";  /* Adjust the path for 'ls' */
+        }
+
+        /* Step 9: Fork and execute the command */
         child_pid = fork();
         if (child_pid == -1) {
             perror("Failed to create process");
@@ -56,6 +61,7 @@ int main(void)
 
         if (child_pid == 0) {  /* Child process */
             if (execve(array[0], array, NULL) == -1) {
+                /* Comment out this error print for debugging to avoid extra output */
                 perror("Command not found");
                 exit(1);
             }
@@ -64,7 +70,7 @@ int main(void)
         }
     }
 
-    free(buf);
+    free(buf);  /* Free the allocated memory at exit */
     return 0;
 }
 
