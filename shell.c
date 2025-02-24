@@ -22,25 +22,13 @@ int main(void)
 
     while (1)
     {
-        /* Display the prompt */
-        write(STDOUT_FILENO, "#cisfun$ ", 9);
-
         /* Read the command */
         nread = getline(&cmd, &len, stdin);
 
         /* Handle EOF (Ctrl+D) */
         if (nread == -1)
         {
-            if (feof(stdin))  /* End of file reached */
-            {
-                write(STDOUT_FILENO, "\n", 1);
-                break;
-            }
-            else
-            {
-                perror("getline");
-                exit(1);
-            }
+            break;
         }
 
         /* Remove the newline character at the end */
