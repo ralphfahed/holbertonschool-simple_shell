@@ -15,62 +15,52 @@ int main(void)
     int status;
 
     while (1) {
-        /* Step 1: Display the prompt */
         write(STDOUT_FILENO, "MyShell$ ", 9);
 
-        /* Step 2: Read the user input */
         nread = getline(&buf, &count, stdin);
 
-        /* Step 3: Check for EOF (exit if so) */
         if (nread == -1) {
             free(buf);
-            return (0);  /* Exit gracefully on EOF */
+            return (0);
         }
 
-        /* Step 4: Remove the newline character */
         if (buf[nread - 1] == '\n') {
             buf[nread - 1] = '\0';
         }
 
-        /* Step 5: Tokenize the input */
         array[0] = strtok(buf, " \n");
         array[1] = NULL;
 
-        /* Step 6: Handle empty input */
         if (array[0] == NULL) {
-            continue;  /* If input is empty, go back to the top of the loop */
+            continue;
         }
 
-        /* Step 7: Handle built-in 'exit' command */
         if (strcmp(array[0], "exit") == 0) {
             free(buf);
-            exit(0);  /* Exit gracefully */
+            exit(0);
         }
 
-        /* Step 8: Handle command execution (prepending full paths if needed) */
         if (strcmp(array[0], "ls") == 0) {
-            array[0] = "/bin/ls";  /* Adjust the path for 'ls' */
+            array[0] = "/bin/ls";
         }
 
-        /* Step 9: Fork and execute the command */
         child_pid = fork();
         if (child_pid == -1) {
             perror("Failed to create process");
             exit(41);
         }
 
-        if (child_pid == 0) {  /* Child process */
+        if (child_pid == 0) {
             if (execve(array[0], array, NULL) == -1) {
-                /* Comment out this error print for debugging to avoid extra output */
                 perror("Command not found");
                 exit(1);
             }
-        } else {  /* Parent process */
-            wait(&status);  /* Wait for child to finish */
+        } else {
+            wait(&status);
         }
     }
 
-    free(buf);  /* Free the allocated memory at exit */
-    return 0;
+    free(buf); 
+    return (0);
 }
 
