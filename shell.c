@@ -54,7 +54,7 @@ void execute_command(char *command) {
 
     if (command_path == NULL) {
         write(STDERR_FILENO, "Command not found\n", 18);
-        return;  /* Return without forking if command is not found */
+        exit(2);  /* Return 2 if command is not found */
     }
 
     args[0] = command_path;
@@ -62,6 +62,7 @@ void execute_command(char *command) {
 
     if (execve(command_path, args, NULL) == -1) {
         write(STDERR_FILENO, "execve failed\n", 14);
+        exit(1);  /* Return 1 if execve fails */
     }
 }
 
@@ -102,7 +103,7 @@ int main(void) {
         read_command(command);
 
         if (strcmp(command, "exit") == 0) {
-            exit(EXIT_SUCCESS);  /* Exit the shell */
+            exit(EXIT_SUCCESS);  /* Exit the shell with status 0 */
         }
 
         if (strcmp(command, "env") == 0) {
