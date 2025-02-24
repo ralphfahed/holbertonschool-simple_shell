@@ -9,5 +9,5 @@
 #include <string.h>
 
 void execute_command(char *cmd);
-
+extern char **environ;
 #endif /* SHELL_H */

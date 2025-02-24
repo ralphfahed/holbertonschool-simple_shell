@@ -55,9 +55,12 @@ int main(void)
  */
 void execute_command(char *cmd)
 {
-    char *args[] = {cmd, NULL};
+    char *args[2];
+    args[0] = cmd;
+    args[1] = NULL;
 
     execve(args[0], args, environ);
     perror("execve"); /* Print error if execve fails */
     exit(EXIT_FAILURE);
 }
+
