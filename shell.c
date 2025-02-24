@@ -9,13 +9,15 @@
 
 #define MAX_COMMAND_LENGTH 1024
 
+extern char **environ;  /* The global environment variable */
+
 /* Function to search for the command in the PATH directories */
 char *find_command_in_path(char *command) {
     char *path_env = getenv("PATH");
     char *path;
     char *full_path;
 
-    if (!path_env) {
+    if (!path_env || strlen(path_env) == 0) {
         return NULL;
     }
 
@@ -51,8 +53,8 @@ void execute_command(char *command) {
     }
 
     if (command_path == NULL) {
-        write(STDERR_FILENO, "File does not exist\n", 20);
-        exit(EXIT_FAILURE);
+        write(STDERR_FILENO, "Command not found\n", 18);
+        return;  /* Return without forking if command is not found */
     }
 
     args[0] = command_path;
@@ -60,7 +62,6 @@ void execute_command(char *command) {
 
     if (execve(command_path, args, NULL) == -1) {
         write(STDERR_FILENO, "execve failed\n", 14);
-        exit(EXIT_FAILURE);
     }
 }
 
@@ -79,6 +80,16 @@ void read_command(char *buffer) {
     }
 }
 
+void print_env(void) {
+    char **env = environ;  /* Access the global environment variable */
+    
+    while (*env) {
+        write(STDOUT_FILENO, *env, strlen(*env));  /* Print each environment variable */
+        write(STDOUT_FILENO, "\n", 1);  /* Print a new line after each variable */
+        env++;
+    }
+}
+
 int main(void) {
     char command[MAX_COMMAND_LENGTH];
     pid_t pid;
@@ -91,11 +102,16 @@ int main(void) {
         read_command(command);
 
         if (strcmp(command, "exit") == 0) {
-            break;
+            exit(EXIT_SUCCESS);  /* Exit the shell */
+        }
+
+        if (strcmp(command, "env") == 0) {
+            print_env();  /* Print environment variables */
+            continue;  /* Skip the fork and continue to the next command */
         }
 
         /* Check if the command exists in PATH before forking */
-        if (find_command_in_path(command) == NULL) {
+        if (find_command_in_path(command) == NULL && (command[0] != '/' && command[0] != '.')) {
             write(STDERR_FILENO, "Command not found\n", 18);
             continue;  /* Skip the fork and continue to next command */
         }
