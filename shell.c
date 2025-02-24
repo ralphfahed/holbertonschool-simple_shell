@@ -1,88 +1,84 @@
-#include "shell.h"
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#define MAX_CMD_LENGTH 1024
+
 /**
-  * main - Simple shell implementation using getline
-  * @argc: Argument count
-  * @argv: Array of argument values
-  *
-  * Return: 0 on success
-  */
-int main(int argc, char **argv)
+ * main - Simple shell implementation
+ *
+ * Return: 0 on success
+ */
+int main(void)
 {
-    char *buf = NULL, *token;
-    size_t count = 0;
+    char *cmd = NULL;
+    size_t len = 0;
     ssize_t nread;
     pid_t child_pid;
-    int i, status;
-    char *args[1024];  /* Array to store command and arguments */
-
-    (void)argc, (void)argv; /* Suppress unused parameter warnings */
+    int status;
 
     while (1)
     {
-        /* Only show the prompt if the shell is interactive */
-        if (isatty(STDIN_FILENO)) {
-            write(STDOUT_FILENO, "MyShell$ ", 9); /* Prompt */
-        }
+        /* Display the prompt */
+        write(STDOUT_FILENO, "#cisfun$ ", 9);
 
-        nread = getline(&buf, &count, stdin);  /* Read input */
+        /* Read the command */
+        nread = getline(&cmd, &len, stdin);
+
+        /* Handle EOF (Ctrl+D) */
         if (nread == -1)
         {
-            perror("Exiting shell");
-            free(buf);
-            exit(1);
+            if (feof(stdin))  /* End of file reached */
+            {
+                write(STDOUT_FILENO, "\n", 1);
+                break;
+            }
+            else
+            {
+                perror("getline");
+                exit(1);
+            }
         }
 
-        /* Remove trailing newline character */
-        buf[strcspn(buf, "\n")] = 0;
-
-        /* Tokenize the input by space */
-        i = 0;
-        token = strtok(buf, " ");
-        while (token != NULL)
-        {
-            args[i] = token;
-            i++;
-            token = strtok(NULL, " ");
-        }
-        args[i] = NULL;  /* Null-terminate the argument list */
-
-        /* Check if the command is "exit" */
-        if (strcmp(args[0], "exit") == 0)
-        {
-            free(buf);
-            exit(0);
-        }
+        /* Remove the newline character at the end */
+        cmd[strcspn(cmd, "\n")] = '\0';
 
         /* Fork a child process */
         child_pid = fork();
         if (child_pid == -1)  /* Fork failed */
         {
-            perror("Fork failed");
-            free(buf);
+            perror("fork");
+            free(cmd);
             exit(1);
         }
+
         if (child_pid == 0)  /* Child process */
         {
-            if (execve(args[0], args, NULL) == -1)  /* Execute the command */
+            /* Dynamically allocate an array for execve */
+            char *args[2];  /* Only need one argument (cmd), plus NULL for execve */
+            args[0] = cmd;
+            args[1] = NULL;
+
+            /* Execute the command using execve */
+            if (execve(cmd, args, NULL) == -1)
             {
-                perror("execve failed");
-                free(buf);
+                /* Command not found */
+                perror("./shell");
+                free(cmd);
                 exit(1);
             }
         }
         else  /* Parent process */
         {
-            wait(&status);  /* Wait for the child process to finish */
+            wait(&status);  /* Wait for the child to finish */
         }
     }
 
-    free(buf);
-    return (0);
+    /* Free allocated memory */
+    free(cmd);
+    return 0;
 }
 
