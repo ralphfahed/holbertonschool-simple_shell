@@ -7,11 +7,7 @@
 
 #define MAX_COMMAND_LENGTH 1024
 
-void execute_command(char *command) {
-    char *args[2];
-    args[0] = command;
-    args[1] = NULL;
-
+void execute_command(char *command, char **args) {
     if (access(command, F_OK) == -1) {
         write(STDERR_FILENO, "File does not exist\n", 20);
         exit(EXIT_FAILURE);
@@ -32,9 +28,9 @@ void read_command(char *buffer) {
         exit(EXIT_SUCCESS);
     }
 
-    buffer[n] = '\0';
+    buffer[n] = '\0';  
     if (buffer[n - 1] == '\n') {
-        buffer[n - 1] = '\0';
+        buffer[n - 1] = '\0';  
     }
 }
 
@@ -61,11 +57,18 @@ int main(void) {
         }
 
         if (pid == 0) {
+            char *args[MAX_COMMAND_LENGTH / 2 + 1];  
             char *cmd_token = strtok(command, " \n");
+            int i = 0;
+
             while (cmd_token != NULL) {
-                execute_command(cmd_token);
+                args[i] = cmd_token;
+                i++;
                 cmd_token = strtok(NULL, " \n");
             }
+            args[i] = NULL;  
+
+            execute_command(args[0], args);
         } else {
             wait(NULL);
         }
