@@ -5,16 +5,18 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
+
 int main(int argc, char **argv)
 {
-
-    char *buf = NULL;
+	 char *buf = NULL;
     size_t count = 0;
     ssize_t nread;
     pid_t child_pid;
     int status;
     char *array[2];  /* Array for command and argument */
- (void)argc, (void)argv;
+
+    (void)argc, (void)argv;
+
     while (1)
     {
         write(STDOUT_FILENO, "MyShell$ ", 9);
@@ -77,12 +79,6 @@ int main(int argc, char **argv)
         else
         {
             wait(&status);  /* Parent waits for child to finish */
-
-            if (WIFEXITED(status)) {
-                printf("Child exited with status %d\n", WEXITSTATUS(status));
-            } else if (WIFSIGNALED(status)) {
-                printf("Child was terminated by signal %d\n", WTERMSIG(status));
-            }
         }
     }
 
