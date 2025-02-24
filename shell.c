@@ -2,57 +2,70 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/wait.h>  /* Include this to declare wait() */
+#include <sys/types.h>
+#include <sys/wait.h>
 
-#define MAX_CMD_LEN 1024
+#define MAX_COMMAND_LENGTH 1024
 
 void execute_command(char *command) {
-    pid_t pid = fork();
+    char *args[2];
+    args[0] = command;
+    args[1] = NULL;
 
-    if (pid == 0) {
-        /* In child process */
-        char *args[2];  /* Create fixed array */
-        args[0] = command;
-        args[1] = NULL;  /* Set last element to NULL for execve */
+    /* Check if the file exists and is executable */
+    if (access(command, F_OK) == -1) {
+        write(STDERR_FILENO, "File does not exist\n", 20);
+        exit(EXIT_FAILURE);
+    }
 
-        if (execve(command, args, NULL) == -1) {
-            perror("execve");  /* If execution fails */
-            exit(1);
-        }
-    } else if (pid > 0) {
-        /* In parent process */
-        wait(NULL);  /* Wait for the child process to finish */
-    } else {
-        /* Fork failed */
-        perror("fork");
+    /* Ensure the command can be executed */
+    if (execve(command, args, NULL) == -1) {
+        write(STDERR_FILENO, "execve failed\n", 14);
+        exit(EXIT_FAILURE);
     }
 }
 
-int main() {
-    char input[MAX_CMD_LEN];
-    char *cmd;  /* Declare cmd variable before code */
+void read_command(char *buffer) {
+    int n = read(STDIN_FILENO, buffer, MAX_COMMAND_LENGTH - 1);
+    if (n == -1) {
+        write(STDERR_FILENO, "Error reading input\n", 20);
+        exit(EXIT_FAILURE);
+    } else if (n == 0) {
+        exit(EXIT_SUCCESS);
+    }
 
-    /* Read input from stdin */
+    buffer[n] = '\0';  
+    if (buffer[n - 1] == '\n') {
+        buffer[n - 1] = '\0';  
+    }
+}
+
+int main(void) {
+    char command[MAX_COMMAND_LENGTH];
+    pid_t pid;
+
     while (1) {
-        printf("#cisfun$ ");
-        if (fgets(input, MAX_CMD_LEN, stdin) == NULL) {
-            break;  /* Exit if error reading input */
+        if (isatty(STDIN_FILENO)) {
+            write(STDOUT_FILENO, "#cisfun$ ", 9);
         }
 
-        /* Remove trailing newline character */
-        input[strcspn(input, "\n")] = 0;
+        read_command(command);
 
-        /* Check if input is not empty */
-        if (strlen(input) == 0) {
-            continue;  /* Skip empty input */
+        if (strcmp(command, "exit") == 0) {
+            break;
         }
 
-        /* Split the input by newline to handle multiple commands */
-        cmd = strtok(input, "\n");
+        pid = fork();
 
-        while (cmd != NULL) {
-            execute_command(cmd);
-            cmd = strtok(NULL, "\n");
+        if (pid == -1) {
+            write(STDERR_FILENO, "Fork failed\n", 12);
+            exit(EXIT_FAILURE);
+        }
+
+        if (pid == 0) {
+            execute_command(command);
+        } else {
+            wait(NULL);
         }
     }
 
