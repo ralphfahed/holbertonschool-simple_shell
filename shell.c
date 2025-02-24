@@ -1,11 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <string.h>
-
-#define BUFFER_SIZE 1024
+#include <sys/wait.h>
 
 int main(void)
 {
@@ -17,7 +14,7 @@ int main(void)
 
     while (1)
     {
-        printf("#cisfun$ ");
+        printf("#cisfun$ ");  /* Display prompt only once before reading input */
         fflush(stdout);
 
         nread = getline(&line, &len, stdin);
@@ -27,7 +24,7 @@ int main(void)
             break;
         }
 
-        line[strcspn(line, "\n")] = '\0';  /* Remove newline */
+        line[strcspn(line, "\n")] = '\0';  /* Remove newline character from input */
 
         if (strlen(line) == 0)  /* Ignore empty lines */
             continue;
@@ -41,23 +38,23 @@ int main(void)
 
         if (pid == 0)  /* Child process */
         {
-            char *argv[2];  /* Declare first */
-            argv[0] = line; /* Assign dynamically */
+            char *argv[2];
+            argv[0] = line;
             argv[1] = NULL;
 
             if (execve(line, argv, NULL) == -1)
             {
-                perror("./shell");
-                exit(EXIT_FAILURE);
+                perror("Error");
+                exit(EXIT_FAILURE);  /* Exit child process on error */
             }
         }
         else  /* Parent process */
         {
-            wait(&status);
+            wait(&status);  /* Parent waits for the child to finish */
         }
     }
 
-    free(line);
+    free(line);  /* Free memory allocated for line */
     return 0;
 }
 
