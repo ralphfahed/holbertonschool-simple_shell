@@ -16,7 +16,7 @@ int main(void)
 
     while (1)
     {
-        /* Print only the prompt when waiting for input */
+        /* Print prompt only when waiting for user input */
         printf(PROMPT);
         fflush(stdout);
         nread = getline(&line, &len, stdin);
@@ -28,11 +28,12 @@ int main(void)
             exit(0);
         }
 
-        line[strcspn(line, "\n")] = 0;  /* Remove newline from input */
+        /* Remove newline character at the end of the input */
+        line[strcspn(line, "\n")] = 0;
         if (strlen(line) == 0)
             continue;
 
-        /* Check if the command exists and is executable */
+        /* Check if command is executable */
         if (access(line, X_OK) != 0)
         {
             fprintf(stderr, "./shell: No such file or directory\n");
@@ -40,26 +41,24 @@ int main(void)
         }
 
         pid = fork();
-        if (pid == 0)  /* Child process */
+        if (pid == 0)
         {
             char *args[2];
             args[0] = line;
             args[1] = NULL;
-
-            execve(line, args, NULL);  /* Execute the command */
+            execve(line, args, NULL);
             perror("execve");
             exit(1);
         }
-        else if (pid > 0)  /* Parent process */
+        else if (pid > 0)
         {
-            wait(NULL);  /* Wait for the child process to finish */
+            wait(NULL);
         }
         else
         {
             perror("fork");
         }
     }
-
     return 0;
 }
 
