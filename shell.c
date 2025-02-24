@@ -1,45 +1,72 @@
 #include <stdio.h>
-#include <unistd.h>
-#include <string.h>
 #include <stdlib.h>
-#include <sys/wait.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
-#define MAX_INPUT_SIZE 1024
+#define MAX_COMMAND_LENGTH 1024
 
-int main() {
-    char input[MAX_INPUT_SIZE];
+void execute_command(char *command) {
     char *args[2];
-    char *command = "/bin/ls";  /* Example: Always run ls for now */
+    args[0] = command;
+    args[1] = NULL;
+
+    if (access(command, F_OK) == -1) {
+        write(STDERR_FILENO, "File does not exist\n", 20);
+        exit(EXIT_FAILURE);
+    }
+
+    if (execve(command, args, NULL) == -1) {
+        write(STDERR_FILENO, "execve failed\n", 14);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void read_command(char *buffer) {
+    int n = read(STDIN_FILENO, buffer, MAX_COMMAND_LENGTH - 1);
+    if (n == -1) {
+        write(STDERR_FILENO, "Error reading input\n", 20);
+        exit(EXIT_FAILURE);
+    } else if (n == 0) {
+        exit(EXIT_SUCCESS);
+    }
+
+    buffer[n] = '\0';  
+    if (buffer[n - 1] == '\n') {
+        buffer[n - 1] = '\0'; 
+    }
+}
+
+int main(void) {
+    char command[MAX_COMMAND_LENGTH];
+    pid_t pid;
 
     while (1) {
-        /* Print prompt only if input is from the terminal (interactive) */
-        if (isatty(fileno(stdin))) {
-            printf("#cisfun$ ");
-            fflush(stdout);
+        if (isatty(STDIN_FILENO)) {
+            write(STDOUT_FILENO, "#cisfun$ ", 9);
         }
 
-        /* Read the input */
-        if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
-            break;  /* Exit if no input */
+        read_command(command);
+
+        if (strcmp(command, "exit") == 0) {
+            break;
         }
 
-        /* Remove trailing newline */
-        input[strcspn(input, "\n")] = 0;
+        pid = fork();
 
-        /* Example: Handle the command '/bin/ls' */
-        args[0] = command;
-        args[1] = NULL;
+        if (pid == -1) {
+            write(STDERR_FILENO, "Fork failed\n", 12);
+            exit(EXIT_FAILURE);
+        }
 
-        /* Execute the command */
-        if (fork() == 0) {
-            execve(command, args, NULL);
-            perror("execve failed");
-            exit(1);
+        if (pid == 0) {
+            execute_command(command);
         } else {
-            wait(NULL);  /* Wait for child process */
+            wait(NULL);
         }
     }
+
     return 0;
 }
 
