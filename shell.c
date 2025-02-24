@@ -2,59 +2,60 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
-void display_prompt() {
-    /* Display the prompt before reading input */
-    write(STDOUT_FILENO, "#cisfun$ ", 9);
-}
+#define PROMPT "#cisfun$ "
 
-char *read_input() {
-    char *command = NULL;
+int main(void)
+{
+    char *line = NULL;
     size_t len = 0;
     ssize_t nread;
+    pid_t pid;
 
-    /* Use getline instead of fgets */
-    nread = getline(&command, &len, stdin);
-    if (nread == -1) {
-        /* Handle EOF or error */
-        free(command);
-        return NULL;
-    }
-    
-    /* Remove the newline character from input */
-    if (nread > 0 && command[nread - 1] == '\n') {
-        command[nread - 1] = '\0';
-    }
+    while (1)
+    {
+        printf(PROMPT);
+        fflush(stdout);
+        nread = getline(&line, &len, stdin);
 
-    return command;
-}
-
-void execute_command(char *command) {
-    char *argv[] = {command, NULL};  /* Array of arguments for execve */
-    if (execve(command, argv, NULL) == -1) {  /* Try to execute the command */
-        perror("execve");
-    }
-}
-
-int main() {
-    char *command;
-
-    while (1) {
-        display_prompt();  /* Display prompt before reading the command */
-        command = read_input();  /* Read input from the user */
-
-        if (command == NULL) {  /* Handle EOF (Ctrl+D) */
+        if (nread == -1)
+        {
+            free(line);
             printf("\n");
-            break;
+            exit(0);
         }
 
-        if (strlen(command) > 0) {
-            execute_command(command);  /* Execute the command */
+        line[strcspn(line, "\n")] = 0;
+        if (strlen(line) == 0)
+            continue;
+
+        if (access(line, X_OK) != 0)
+        {
+            fprintf(stderr, "./shell: No such file or directory\n");
+            continue;
         }
 
-        free(command);  /* Free the allocated memory for the command */
+        pid = fork();
+        if (pid == 0)
+        {
+            char *args[2];
+            args[0] = line;
+            args[1] = NULL;
+            execve(line, args, NULL);
+            perror("execve");
+            exit(1);
+        }
+        else if (pid > 0)
+        {
+            wait(NULL);
+        }
+        else
+        {
+            perror("fork");
+        }
     }
-
     return 0;
 }
 
