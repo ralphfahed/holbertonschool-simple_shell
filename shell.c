@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     {
         /* Only show the prompt if the shell is interactive */
         if (isatty(STDIN_FILENO)) {
-            write(STDOUT_FILENO, "MyShell$ ", 9); /* Prompt */
+            write(STDOUT_FILENO, "$ ", 9); /* Prompt */
         }
 
         nread = getline(&buf, &count, stdin);  /* Read input */
