@@ -4,8 +4,12 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 
-    /* Declare all variables at the top, before any code execution */
+int main(int argc, char **argv)
+{
+    (void)argc, (void)argv;
+
     char *buf = NULL;
     size_t count = 0;
     ssize_t nread;
@@ -13,27 +17,37 @@
     int status;
     char *array[2];  /* Array for command and argument */
 
-int main(int argc, char **argv)
-{
-    (void)argc, (void)argv;
-    
-
     while (1)
     {
-        /* Now the declaration is complete, you can safely write code here */
-        write(STDOUT_FILENO, "#cisfun$ ", 9);
+        write(STDOUT_FILENO, "MyShell$ ", 9);
 
         nread = getline(&buf, &count, stdin);
 
         if (nread == -1)
         {
-            perror("Exiting shell");
-            exit(1);
+            free(buf);
+            return (0);  /* Exit gracefully on EOF */
         }
 
-        /* Split the input into command and arguments */
+        /* Remove newline character if present */
+        if (buf[nread - 1] == '\n')
+        {
+            buf[nread - 1] = '\0';
+        }
+
         array[0] = strtok(buf, " \n");
         array[1] = NULL;
+
+        if (array[0] == NULL)  /* Handle empty input (like pressing Enter) */
+        {
+            continue;
+        }
+
+        /* Check if the command is "ls" and prepend the full path */
+        if (strcmp(array[0], "ls") == 0)
+        {
+            array[0] = "/bin/ls";
+        }
 
         child_pid = fork();
 
@@ -47,13 +61,30 @@ int main(int argc, char **argv)
         {
             if (execve(array[0], array, NULL) == -1)
             {
-                perror("Couldn't execute");
-                exit(7);
+                if (errno == ENOENT)
+                {
+                    perror("Command not found");
+                }
+                else if (errno == EACCES)
+                {
+                    perror("Permission denied");
+                }
+                else
+                {
+                    perror("Couldn't execute");
+                }
+                exit(7);  /* Exit child process if execve fails */
             }
         }
         else
         {
-            wait(&status);
+            wait(&status);  /* Parent waits for child to finish */
+
+            if (WIFEXITED(status)) {
+                printf("Child exited with status %d\n", WEXITSTATUS(status));
+            } else if (WIFSIGNALED(status)) {
+                printf("Child was terminated by signal %d\n", WTERMSIG(status));
+            }
         }
     }
 
