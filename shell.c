@@ -5,60 +5,59 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define PROMPT "#cisfun$ "
-
-int main(void)
-{
-    char *line = NULL;
-    size_t len = 0;
+    /* Declare all variables at the top, before any code execution */
+    char *buf = NULL;
+    size_t count = 0;
     ssize_t nread;
-    pid_t pid;
+    pid_t child_pid;
+    int status;
+    char *array[2];  /* Array for command and argument */
+
+int main(int argc, char **argv)
+{
+    (void)argc, (void)argv;
+    
 
     while (1)
     {
-        /* Print prompt only when waiting for user input */
-        printf(PROMPT);
-        fflush(stdout);
-        nread = getline(&line, &len, stdin);
+        /* Now the declaration is complete, you can safely write code here */
+        write(STDOUT_FILENO, "#cisfun$ ", 9);
+
+        nread = getline(&buf, &count, stdin);
 
         if (nread == -1)
         {
-            free(line);
-            printf("\n");
-            exit(0);
-        }
-
-        /* Remove newline character at the end of the input */
-        line[strcspn(line, "\n")] = 0;
-        if (strlen(line) == 0)
-            continue;
-
-        /* Check if command is executable */
-        if (access(line, X_OK) != 0)
-        {
-            fprintf(stderr, "./shell: No such file or directory\n");
-            continue;
-        }
-
-        pid = fork();
-        if (pid == 0)
-        {
-            char *args[2];
-            args[0] = line;
-            args[1] = NULL;
-            execve(line, args, NULL);
-            perror("execve");
+            perror("Exiting shell");
             exit(1);
         }
-        else if (pid > 0)
+
+        /* Split the input into command and arguments */
+        array[0] = strtok(buf, " \n");
+        array[1] = NULL;
+
+        child_pid = fork();
+
+        if (child_pid == -1)
         {
-            wait(NULL);
+            perror("Failed to create.");
+            exit(41);
+        }
+
+        if (child_pid == 0)
+        {
+            if (execve(array[0], array, NULL) == -1)
+            {
+                perror("Couldn't execute");
+                exit(7);
+            }
         }
         else
         {
-            perror("fork");
+            wait(&status);
         }
     }
-    return 0;
+
+    free(buf);
+    return (0);
 }
 
