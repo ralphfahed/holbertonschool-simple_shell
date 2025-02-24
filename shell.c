@@ -2,15 +2,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 
 #define MAX_CMD_LENGTH 1024
 
 /**
- * main - Simple shell implementation
+ * main - A simple shell program that reads input and executes commands.
  *
- * Return: 0 on success
+ * Return: Always 0 (Success).
  */
 int main(void)
 {
@@ -22,17 +21,33 @@ int main(void)
 
     while (1)
     {
+        /* Display the prompt */
+        write(STDOUT_FILENO, "#cisfun$ ", 9);
+
         /* Read the command */
         nread = getline(&cmd, &len, stdin);
 
         /* Handle EOF (Ctrl+D) */
         if (nread == -1)
         {
-            break;
+            if (feof(stdin))  /* End of file reached */
+            {
+                write(STDOUT_FILENO, "\n", 1);
+                break;
+            }
+            else
+            {
+                perror("getline");
+                exit(1);
+            }
         }
 
         /* Remove the newline character at the end */
         cmd[strcspn(cmd, "\n")] = '\0';
+
+        /* Skip printing prompt when executing a command */
+        if (strlen(cmd) == 0)
+            continue;
 
         /* Fork a child process */
         child_pid = fork();
@@ -65,8 +80,9 @@ int main(void)
         }
     }
 
-    /* Free allocated memory */
+    /* Free the allocated memory */
     free(cmd);
+
     return 0;
 }
 
