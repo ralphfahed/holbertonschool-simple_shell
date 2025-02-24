@@ -1,13 +1,13 @@
-#ifndef SHELL_H
-#define SHELL_H
+#ifndef MAIN_H
+#define MAIN_H
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
 
-void execute_command(char *cmd);
-extern char **environ;
-#endif /* SHELL_H */
+
+#endif /* MAIN_H */
+

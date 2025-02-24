@@ -1,64 +1,70 @@
 #include "shell.h"
 
 /**
- * main - Simple UNIX command line interpreter
- * Return: 0 on success, 1 on failure
- */
-int main(void)
+  * main - Getline function
+  * @argc: Argument count
+  * @argv: Array of argument values
+  *
+  * Return: 0 on success
+  */
+
+int main(int argc, char **argv)
 {
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t nread;
-    pid_t pid;
-    int status;
+        (void)argc, (void)argv;
+        char *buf = NULL, *token;
+        size_t count = 0;
+        ssize_t nread;
+        pid_t child_pid;
+        int i, status;
+        char **array;
 
-while (1)
-{
-    printf("$ ");
-    fflush(stdout); /* Ensure the prompt is displayed immediately */
+        while (1)
+        {
+                write(STDOUT_FILENO, "MyShell$ ", 9);
 
-    nread = getline(&line, &len, stdin);
+                nread = getline(&buf, &count, stdin);
 
-    if (nread == -1) /* Handle EOF (Ctrl+D) */
-    {
-        printf("\n");
-        break;
-    }
+                if (nread ==  -1)
+                {
+                        perror("Exiting shell");
+                        exit(1);
+                }
 
-    line[strcspn(line, "\n")] = '\0'; /* Remove newline */
+                token = strtok(buf, " \n");
 
-    if (strlen(line) == 0) /* Ignore empty input */
-        continue;
+                array = malloc(sizeof(char*) * 1024);
+                i = 0;
 
-    pid = fork();
-    if (pid == -1)
-    {
-        perror("fork");
-        exit(EXIT_FAILURE);
-    }
+                while (token)
+                {
+                        array[i] = token;
+                        token = strtok(NULL, " \n");
+                        i++;
+                }
 
-    if (pid == 0)
-    {
-        execute_command(line);
-    }
-    else
-    {
-        wait(&status);
-    }
+                array[i] = NULL;
+
+                child_pid = fork();
+
+                if (child_pid == -1)
+                {
+                        perror("Failed to create.");
+                        exit (41);
+                }
+
+                if (child_pid == 0)
+                {
+                        if (execve(array[0], array, NULL) == -1)
+                        {
+                                perror("Failed to execute");
+                                exit(97);
+                        }
+                }
+                else
+                {
+                        wait(&status);
+                }
+        }
+        free(buf);
+        return (0);
 }
-
-/**
- * execute_command - Executes a command
- * @cmd: The command to execute
- */
-void execute_command(char *cmd)
-{
-    char *args[2];
-    args[0] = cmd;
-    args[1] = NULL;
-
-    execve(args[0], args, environ);
-    perror("execve"); /* Print error if execve fails */
-    exit(EXIT_FAILURE);
-}
-
