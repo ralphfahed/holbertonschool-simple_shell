@@ -17,37 +17,37 @@ int main(void)
 
     while (1)
     {
-        printf("$ ");
+        printf("#cisfun$ ");
         fflush(stdout);
-        
+
         nread = getline(&line, &len, stdin);
         if (nread == -1)  /* Handle EOF (Ctrl+D) */
         {
             printf("\n");
             break;
         }
-        
+
         line[strcspn(line, "\n")] = '\0';  /* Remove newline */
-        
+
         if (strlen(line) == 0)  /* Ignore empty lines */
             continue;
-        
+
         pid = fork();
         if (pid == -1)
         {
             perror("fork");
             continue;
         }
-        
+
         if (pid == 0)  /* Child process */
         {
-            char *argv[2];  /* Declare normally */
-            argv[0] = line;
+            char *argv[2];  /* Declare first */
+            argv[0] = line; /* Assign dynamically */
             argv[1] = NULL;
 
             if (execve(line, argv, NULL) == -1)
             {
-                perror("Error");
+                perror("./shell");
                 exit(EXIT_FAILURE);
             }
         }
@@ -56,7 +56,7 @@ int main(void)
             wait(&status);
         }
     }
-    
+
     free(line);
     return 0;
 }
