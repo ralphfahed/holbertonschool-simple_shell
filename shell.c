@@ -14,12 +14,8 @@ int main(void)
 
     while (1)
     {
-        /* Print the prompt before reading input */
-        if (isatty(STDIN_FILENO))
-        {
-            printf("#cisfun$ ");
-            fflush(stdout);
-        }
+        printf("#cisfun$ ");  /* Display prompt */
+        fflush(stdout);
 
         nread = getline(&line, &len, stdin);
         if (nread == -1)  /* Handle EOF (Ctrl+D) */
@@ -54,11 +50,11 @@ int main(void)
         }
         else  /* Parent process */
         {
-            wait(&status);  /* Parent waits for child */
+            wait(&status);
         }
     }
 
-    free(line);  /* Free allocated memory for line */
+    free(line);  /* Free the allocated memory */
     return 0;
 }
 
