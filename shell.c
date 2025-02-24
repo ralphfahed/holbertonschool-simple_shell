@@ -16,7 +16,7 @@ int main(void)
 
     while (1)
     {
-        /* Prompt only printed when waiting for input */
+        /* Print only the prompt when waiting for input */
         printf(PROMPT);
         fflush(stdout);
         nread = getline(&line, &len, stdin);
