@@ -5,43 +5,59 @@
 #include <sys/wait.h>
 #include <string.h>
 
+#define BUFFER_SIZE 1024
+
 int main(void)
 {
-char *buf= NULL;
-size_t buf_size = 0;
-char *token;
-int status, i = 0;
-char **array;
-pid_t child_pid;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t nread;
+    pid_t pid;
+    int status;
 
+    while (1)
+    {
+        printf("$ ");
+        fflush(stdout);
+        
+        nread = getline(&line, &len, stdin);
+        if (nread == -1)  /* Handle EOF (Ctrl+D) */
+        {
+            printf("\n");
+            break;
+        }
+        
+        line[strcspn(line, "\n")] = '\0';  /* Remove newline */
+        
+        if (strlen(line) == 0)  /* Ignore empty lines */
+            continue;
+        
+        pid = fork();
+        if (pid == -1)
+        {
+            perror("fork");
+            continue;
+        }
+        
+        if (pid == 0)  /* Child process */
+        {
+            char *argv[2];  /* Declare normally */
+            argv[0] = line;
+            argv[1] = NULL;
 
-	while(1){
-		write(1, "#cisfun$ ", 9);
-		getline(&buf, &buf_size, stdin);
-		token = strtok(buf, "\t\n");
-		array = malloc(sizeof(char *) * 1024);
-	
-		while(token)
-		{
-			array[i] = token;
-			token = strtok(NULL, "\t\n");
-			i++;
-		
-		}
-		array[i] = NULL;
-		child_pid = fork();
-
-		if (child_pid == 0)
-		{
-			if(execve(array[0], array ,  NULL) == -1 )
-				perror("Error");
-
-		}
-		else
-		{
-			wait(&status);
-		}
-		i= 0;
-	free(array);
+            if (execve(line, argv, NULL) == -1)
+            {
+                perror("Error");
+                exit(EXIT_FAILURE);
+            }
+        }
+        else  /* Parent process */
+        {
+            wait(&status);
+        }
+    }
+    
+    free(line);
+    return 0;
 }
-}
+
