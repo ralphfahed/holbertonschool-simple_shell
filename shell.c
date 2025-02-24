@@ -12,13 +12,11 @@ void execute_command(char *command) {
     args[0] = command;
     args[1] = NULL;
 
-    /* Check if the file exists and is executable */
     if (access(command, F_OK) == -1) {
         write(STDERR_FILENO, "File does not exist\n", 20);
         exit(EXIT_FAILURE);
     }
 
-    /* Ensure the command can be executed */
     if (execve(command, args, NULL) == -1) {
         write(STDERR_FILENO, "execve failed\n", 14);
         exit(EXIT_FAILURE);
@@ -34,9 +32,9 @@ void read_command(char *buffer) {
         exit(EXIT_SUCCESS);
     }
 
-    buffer[n] = '\0';  
+    buffer[n] = '\0';
     if (buffer[n - 1] == '\n') {
-        buffer[n - 1] = '\0';  
+        buffer[n - 1] = '\0';
     }
 }
 
@@ -63,7 +61,11 @@ int main(void) {
         }
 
         if (pid == 0) {
-            execute_command(command);
+            char *cmd_token = strtok(command, " \n");
+            while (cmd_token != NULL) {
+                execute_command(cmd_token);
+                cmd_token = strtok(NULL, " \n");
+            }
         } else {
             wait(NULL);
         }
