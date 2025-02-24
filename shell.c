@@ -4,16 +4,61 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define MAX_COMMAND_LENGTH 1024
 
-void execute_command(char *command, char **args) {
-    if (access(command, F_OK) == -1) {
+/* Function to search for the command in the PATH directories */
+char *find_command_in_path(char *command) {
+    char *path_env = getenv("PATH");
+    char *path;
+    char *full_path;
+
+    if (!path_env) {
+        return NULL;
+    }
+
+    path = strtok(path_env, ":"); /* Get the first directory in PATH */
+    while (path != NULL) {
+        full_path = malloc(strlen(path) + strlen(command) + 2); /* Allocate memory for full path */
+        if (!full_path) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
+        sprintf(full_path, "%s/%s", path, command); /* Build full path */
+
+        if (access(full_path, X_OK) == 0) {
+            return full_path;  /* Return the full path if found */
+        }
+        free(full_path);  /* Free memory if the command is not found in this directory */
+
+        path = strtok(NULL, ":"); /* Move to the next directory */
+    }
+
+    return NULL; /* Return NULL if command is not found in any PATH directories */
+}
+
+void execute_command(char *command) {
+    char *args[2];
+    char *command_path;
+
+    /* If the command contains a '/', treat it as an absolute or relative path */
+    if (command[0] == '/' || command[0] == '.') {
+        command_path = command;
+    } else {
+        command_path = find_command_in_path(command);
+    }
+
+    if (command_path == NULL) {
         write(STDERR_FILENO, "File does not exist\n", 20);
         exit(EXIT_FAILURE);
     }
 
-    if (execve(command, args, NULL) == -1) {
+    args[0] = command_path;
+    args[1] = NULL;
+
+    if (execve(command_path, args, NULL) == -1) {
         write(STDERR_FILENO, "execve failed\n", 14);
         exit(EXIT_FAILURE);
     }
@@ -28,9 +73,9 @@ void read_command(char *buffer) {
         exit(EXIT_SUCCESS);
     }
 
-    buffer[n] = '\0';  
+    buffer[n] = '\0';  /* Ensure null termination */
     if (buffer[n - 1] == '\n') {
-        buffer[n - 1] = '\0';  
+        buffer[n - 1] = '\0';  /* Remove the newline character */
     }
 }
 
@@ -49,6 +94,12 @@ int main(void) {
             break;
         }
 
+        /* Check if the command exists in PATH before forking */
+        if (find_command_in_path(command) == NULL) {
+            write(STDERR_FILENO, "Command not found\n", 18);
+            continue;  /* Skip the fork and continue to next command */
+        }
+
         pid = fork();
 
         if (pid == -1) {
@@ -57,18 +108,7 @@ int main(void) {
         }
 
         if (pid == 0) {
-            char *args[MAX_COMMAND_LENGTH / 2 + 1];  
-            char *cmd_token = strtok(command, " \n");
-            int i = 0;
-
-            while (cmd_token != NULL) {
-                args[i] = cmd_token;
-                i++;
-                cmd_token = strtok(NULL, " \n");
-            }
-            args[i] = NULL;  
-
-            execute_command(args[0], args);
+            execute_command(command);
         } else {
             wait(NULL);
         }
