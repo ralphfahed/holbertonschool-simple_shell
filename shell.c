@@ -2,116 +2,79 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
 
+#define BUFFER_SIZE 1024
+
+/* Declare environ to make it available */
 extern char **environ;
 
-int main(void)
-{
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t nread;
-    char *args[1024];
-    int i;
-    
-    while (1)
-    {
-        printf("$ ");
-        nread = getline(&line, &len, stdin);
-
-        /* Skip empty lines */
-        if (nread == 1)
-            continue;
-
-        /* Remove newline character */
-        if (line[nread - 1] == '\n')
-            line[nread - 1] = '\0';
-
-        /* Tokenize the input */
-        i = 0;
-        char *token = strtok(line, " ");
-        while (token != NULL)
-        {
-            args[i++] = token;
-            token = strtok(NULL, " ");
-        }
-        args[i] = NULL;
-
-        /* Check if it's the 'exit' command */
-        if (strcmp(args[0], "exit") == 0)
-            break;
-
-        /* Handle the 'env' command */
-        if (strcmp(args[0], "env") == 0)
-        {
-            for (char **env = environ; *env != NULL; env++)
-                printf("%s\n", *env);
-            continue;
-        }
-
-        /* Handle executing commands */
-        pid_t pid = fork();
-        if (pid == 0)
-        {
-            char *command_path = get_command_path(args[0]);
-            if (command_path == NULL)
-            {
-                perror("Command not found");
-                exit(1);
-            }
-            execve(command_path, args, environ);
-            perror("execve failed");
-            exit(1);
-        }
-        else if (pid > 0)
-        {
-            wait(NULL);
-        }
-        else
-        {
-            perror("fork failed");
-        }
-    }
-
-    free(line);
-    return 0;
+/* Function to display the prompt */
+void display_prompt() {
+    write(1, "#cisfun$ ", 9); /* Write the prompt to stdout */
 }
 
-/* Function to find the command path */
-char *get_command_path(char *command)
-{
-    char *path = getenv("PATH");
-    if (path == NULL)
-        return NULL;
+/* Function to read a line of input */
+char *read_input() {
+    char *buffer = malloc(BUFFER_SIZE);
+    if (!buffer) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+    if (fgets(buffer, BUFFER_SIZE, stdin) == NULL) {
+        free(buffer);
+        return NULL; /* EOF detected */
+    }
+    return buffer;
+}
 
-    char *path_copy = strdup(path);
-    if (path_copy == NULL)
-        return NULL;
-
-    char *dir = strtok(path_copy, ":");
-    while (dir != NULL)
-    {
-        char *full_path = malloc(strlen(dir) + strlen(command) + 2);
-        if (full_path == NULL)
-        {
-            free(path_copy);
-            return NULL;
-        }
-
-        strcpy(full_path, dir);
-        strcat(full_path, "/");
-        strcat(full_path, command);
-
-        if (access(full_path, F_OK) == 0)
-        {
-            free(path_copy);
-            return full_path;
-        }
-
-        free(full_path);
-        dir = strtok(NULL, ":");
+/* Function to execute a command */
+void execute_command(char *command) {
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
     }
 
-    free(path_copy);
-    return NULL;
+    if (pid == 0) {  /* Child process */
+        char *argv[] = {command, NULL};  /* Array of arguments for execve */
+        if (execve(command, argv, environ) == -1) {  /* Try to execute the command */
+            perror("./shell");  /* Print error message if execve fails */
+            exit(EXIT_FAILURE);
+        }
+    } else {  /* Parent process */
+        wait(NULL);  /* Wait for the child process to finish */
+    }
+}
+
+int main() {
+    char *command;
+
+    while (1) {
+        display_prompt();  /* Display prompt */
+        command = read_input();  /* Read input from the user */
+
+        if (command == NULL) {  /* Handle EOF (Ctrl+D) */
+            printf("\n");
+            break;
+        }
+
+        /* Remove newline character if present */
+        size_t len = strlen(command);
+        if (len > 0 && command[len - 1] == '\n') {
+            command[len - 1] = '\0';
+        }
+
+        /* If the command is not empty, attempt to execute it */
+        if (strlen(command) > 0) {
+            execute_command(command);
+        }
+
+        free(command);  /* Free the allocated memory for the command */
+    }
+
+    return 0;
 }
 
