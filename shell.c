@@ -68,6 +68,10 @@ void execute_command(char *command) {
     }
     args[i] = NULL;
 
+    if (!args[0]) {
+        return;
+    }
+
     if (args[0][0] == '/' || args[0][0] == '.') {
         command_path = args[0];
     } else {
@@ -113,6 +117,7 @@ void print_env(void) {
 int main(void) {
     char command[MAX_COMMAND_LENGTH];
     pid_t pid;
+    char *cmd;
 
     while (1) {
         if (isatty(STDIN_FILENO)) {
@@ -120,27 +125,44 @@ int main(void) {
         }
 
         read_command(command);
-
-        if (strcmp(command, "exit") == 0) {
-            exit(EXIT_SUCCESS);
-        }
-
-        if (strcmp(command, "env") == 0) {
-            print_env();
+        if (strlen(command) == 0) {
             continue;
         }
 
-        pid = fork();
-        if (pid == -1) {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
+        cmd = strtok(command, "\n");
+        while (cmd) {
+            while (*cmd == ' ') {
+                cmd++;
+            }
+            if (strlen(cmd) == 0) {
+                cmd = strtok(NULL, "\n");
+                continue;
+            }
+            
+            if (strcmp(cmd, "exit") == 0) {
+                exit(EXIT_SUCCESS);
+            }
+            
+            if (strcmp(cmd, "env") == 0) {
+                print_env();
+                cmd = strtok(NULL, "\n");
+                continue;
+            }
 
-        if (pid == 0) {
-            execute_command(command);
-        } else {
-            wait(NULL);
+            pid = fork();
+            if (pid == -1) {
+                perror("fork");
+                exit(EXIT_FAILURE);
+            }
+
+            if (pid == 0) {
+                execute_command(cmd);
+            } else {
+                wait(NULL);
+            }
+            cmd = strtok(NULL, "\n");
         }
     }
     return 0;
 }
+
