@@ -118,6 +118,7 @@ int main(void) {
     char command[MAX_COMMAND_LENGTH];
     pid_t pid;
     char *cmd;
+    int status;
 
     while (1) {
         if (isatty(STDIN_FILENO)) {
@@ -158,7 +159,11 @@ int main(void) {
             if (pid == 0) {
                 execute_command(cmd);
             } else {
-                wait(NULL);
+		wait(&status);
+		if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+    		exit(WEXITSTATUS(status));
+		}
+
             }
             cmd = strtok(NULL, "\n");
         }
